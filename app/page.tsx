@@ -49,27 +49,12 @@ export default function Home() {
     }
   }, [accepted, hasSeenNoModal, moveNoButton])
 
+  // After modal closed (Theek hai): only move when user clicks No, not on hover
   const handleNoHover = useCallback(() => {
-    if (accepted !== null) return
-    const container = containerRef.current
-    if (!container || !noButtonRef.current) return
-    const rect = container.getBoundingClientRect()
-    const btn = noButtonRef.current.getBoundingClientRect()
-    const padding = 24
-    const maxMove = 120
-    const newX = (Math.random() - 0.5) * 2 * maxMove
-    const newY = (Math.random() - 0.5) * 2 * maxMove
-    setNoPosition((prev) => {
-      const nextX = prev.x + newX
-      const nextY = prev.y + newY
-      const maxX = rect.width / 2 - btn.width / 2 - padding
-      const maxY = rect.height / 2 - btn.height / 2 - padding
-      return {
-        x: Math.max(-maxX, Math.min(maxX, nextX)),
-        y: Math.max(-maxY, Math.min(maxY, nextY)),
-      }
-    })
-  }, [accepted])
+    // Move only after they've seen modal and closed it - so button runs on hover too (hard to click)
+    if (accepted !== null || !hasSeenNoModal || showNoModal) return
+    moveNoButton()
+  }, [accepted, hasSeenNoModal, showNoModal, moveNoButton])
 
   return (
     <main
@@ -77,6 +62,38 @@ export default function Home() {
       className="relative min-h-screen flex flex-col items-center justify-center px-4 py-12 sm:py-16"
     >
       <FloatingHearts />
+
+      {/* No button first-click modal */}
+      <AnimatePresence>
+        {showNoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-30 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowNoModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25 }}
+              className="max-w-md w-full rounded-2xl bg-gradient-to-br from-[#2d1b4e] to-[#6b2d5c] border border-white/20 shadow-2xl p-6 sm:p-8 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="font-romantic text-2xl sm:text-3xl text-white/95 leading-relaxed">
+                Gandi bachi! 😤 Taras nahi ata apny jani pr, apny dameer pr. Ab ap no kar hi nahi sakti!
+              </p>
+              <button
+                onClick={() => setShowNoModal(false)}
+                className="mt-6 px-6 py-3 rounded-xl font-display text-lg font-medium text-white bg-pink-500/80 hover:bg-pink-500 border border-white/30 transition-colors"
+              >
+                Theek hai 💕
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {accepted === true ? (
@@ -230,6 +247,7 @@ export default function Home() {
               >
                 <button
                   ref={noButtonRef}
+                  onClick={handleNoClick}
                   onMouseEnter={handleNoHover}
                   onTouchStart={handleNoHover}
                   className="px-6 py-3 sm:px-8 sm:py-4 rounded-2xl font-display text-base sm:text-lg font-medium text-white/90 bg-white/15 backdrop-blur border border-white/30 hover:bg-white/25 transition-colors duration-200"
